@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sujatha Professional Services &mdash; Renewals followed up</title>
+<meta name="description" content="Renewal and enquiry follow-up for small life and health insurance agents in Hyderabad.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F7F3EC;
+    --ink:#111111;
+    --teal:#0F6B6B;
+    --teal-dark:#0b5252;
+    --sand:#D9C7A7;
+    --sand-ink:#8A7852;
+    --charcoal:#1C1C1C;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--cream);color:var(--ink);
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:18px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  }
+  img{max-width:100%;height:auto;display:block}
+  a{color:var(--teal)}
+  .wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 24px}
+  .prose{max-width:68ch}
+
+  section{padding:56px 0}
+  @media(min-width:900px){section{padding:96px 0}}
+
+  .eyebrow{
+    font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--sand-ink);font-weight:600;margin:0 0 16px;
+  }
+  h1,h2,h3{font-family:"Fraunces",Georgia,"Times New Roman",serif;font-weight:600;color:var(--ink)}
+  h1{font-size:clamp(2.2rem,6vw,4rem);line-height:1.05;letter-spacing:-.02em;margin:0 0 20px}
+  h2{font-size:clamp(1.6rem,3.4vw,2.4rem);line-height:1.15;letter-spacing:-.01em;margin:0 0 20px}
+  h3{font-size:1.2rem;margin:0 0 8px}
+  p{margin:0 0 16px}
+  .accent{color:var(--teal)}
+  .rule{height:1px;background:var(--sand);border:0;margin:0}
+
+  .site-header{padding:16px 0;border-bottom:1px solid var(--sand)}
+  .brand{
+    font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:1.3rem;
+    color:var(--ink);text-decoration:none;display:inline-flex;align-items:center;gap:10px;
+  }
+  .brand .mark{width:9px;height:9px;border-radius:50%;background:var(--teal);flex:0 0 auto}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    min-height:48px;padding:14px 24px;background:var(--teal);color:#fff;
+    text-decoration:none;border-radius:6px;font-weight:600;font-size:1rem;
+    transition:background .15s ease;
+  }
+  .btn:hover{background:var(--teal-dark)}
+  .btn:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
+
+  .hero{min-height:calc(100svh - 70px);display:flex;align-items:center;padding:32px 0 40px}
+  .hero-grid{display:grid;grid-template-columns:1fr;gap:32px;align-items:center;width:100%}
+  @media(min-width:900px){.hero-grid{grid-template-columns:1fr 1.15fr;gap:52px}}
+  .lede{font-size:1.15rem;max-width:54ch;margin:0 0 30px;color:#2b2b2b}
+  .hero-photo img{
+    width:100%;height:auto;border-radius:12px;border:1px solid var(--sand);
+    box-shadow:0 12px 34px rgba(28,28,28,.09);
+  }
+  @media(min-width:900px){
+    .hero-photo img{min-height:60svh;object-fit:cover}
+  }
+
+  .problem blockquote{
+    margin:0 0 22px;padding:0;border:0;
+    font-family:"Fraunces",Georgia,serif;font-weight:500;
+    font-size:clamp(1.35rem,2.7vw,2rem);line-height:1.35;max-width:42ch;
+  }
+  .slot-line{color:#3d3d3d}
+  .slot{
+    background:#fff;border:1px dashed var(--sand);border-radius:4px;
+    padding:1px 8px;color:#6b6250;font-size:.95em;
+  }
+
+  .band{padding:0}
+  .band img{width:100%;height:auto}
+
+  .cards{display:grid;grid-template-columns:1fr;gap:20px}
+  @media(min-width:760px){.cards{grid-template-columns:repeat(3,1fr)}}
+  .card{background:#fff;border:1px solid var(--sand);border-radius:10px;padding:28px}
+  .card .icon{color:var(--teal);margin-bottom:16px}
+  .card p{color:#333;margin:0}
+  .price{margin:30px 0 0;font-family:"Fraunces",Georgia,serif;font-size:1.4rem}
+  .price strong{color:var(--teal)}
+
+  .steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:26px}
+  @media(min-width:760px){.steps{grid-template-columns:repeat(3,1fr)}}
+  .step .num{
+    width:46px;height:46px;border-radius:50%;border:1.5px solid var(--teal);
+    color:var(--teal);display:flex;align-items:center;justify-content:center;
+    font-family:"Fraunces",Georgia,serif;font-size:1.2rem;margin-bottom:16px;
+  }
+  .step p{margin:0;color:#333}
+
+  .about{display:grid;grid-template-columns:1fr;gap:36px;align-items:start}
+  @media(min-width:880px){.about{grid-template-columns:1fr 340px;gap:52px}}
+  .profile-chip{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .profile-chip img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--sand);flex:0 0 auto}
+  .profile-chip .who{font-family:"Fraunces",Georgia,serif;font-size:1.35rem;font-weight:600}
+  .about-photo img{width:100%;height:auto;border-radius:10px;border:1px solid var(--sand)}
+  .pullquote{margin:26px 0 0;padding:20px 24px;background:#fff;border-left:3px solid var(--teal);border-radius:0 8px 8px 0;color:#333;font-style:italic}
+
+  .contact{background:var(--charcoal);color:var(--cream);padding:88px 0 0}
+  .contact h2{color:var(--cream)}
+  .contact p{color:#d9d3c7}
+  .links{display:flex;flex-direction:column;align-items:flex-start;gap:16px;margin:28px 0 0}
+  .link-alt{
+    display:inline-flex;align-items:center;gap:10px;min-height:44px;
+    color:var(--cream);text-decoration:none;border-bottom:1px solid var(--sand);
+  }
+  .link-alt:hover{color:#fff;border-color:var(--teal)}
+  .second-number{color:var(--sand);font-size:.95rem;margin:2px 0 0 34px}
+  .site-footer{border-top:1px solid #333;margin-top:72px;padding:22px 0}
+  .site-footer .brand{color:var(--cream);font-size:1.05rem}
+  .site-footer p{color:var(--sand);margin:0;font-size:.9rem}
+  .foot-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+</style>
+</head>
+<body>
+
+<!-- Top of the page -->
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="mark" aria-hidden="true"></span>Sujatha Professional Services</a>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">For small life &amp; health insurance agents in Hyderabad</p>
+        <h1>Renewals followed up. Every week. <span class="accent">No lapse.</span></h1>
+        <p class="lede">I set up and run your renewal and enquiry follow-up board, connect the form that fills your sheet, and send you a weekly digest of talking points you can share with clients.</p>
+        <a class="btn" href="https://cal.com/sujatha-ankenapally/20-min-al-business-discovery-call-with-sujatha">Book a 20 minute call</a>
+      </div>
+      <figure class="hero-photo" style="margin:0">
+        <img src="images/speaking.png" width="1672" height="941"
+             alt="Sujatha Ankenapally presenting the renewal and enquiry follow-up board to a client"
+             onerror="this.closest('figure').style.display='none'">
+      </figure>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<!-- The problem -->
+<section class="problem">
+  <div class="wrap">
+    <p class="eyebrow">The problem</p>
+    <blockquote>Small insurance agents keep enquiries and renewal dates in notebooks and phone memory. Renewals lapse quietly, warm leads go cold after one call, and the agent only finds out when the premium never comes.</blockquote>
+    <p class="slot-line">Result: <span class="slot">[YOUR RESULT]</span></p>
+  </div>
+</section>
+
+<!-- Full-width service shot -->
+<figure class="band" style="margin:0">
+  <img src="images/shot-1.png" width="1024" height="1024"
+       alt="The follow-up board screen showing a new enquiry card, a renewal date card and a weekly digest card"
+       onerror="this.closest('figure').style.display='none'">
+</figure>
+
+<!-- What I do -->
+<section id="services">
+  <div class="wrap">
+    <p class="eyebrow">What I do</p>
+    <h2>Three services that keep every renewal in view.</h2>
+    <div class="cards">
+      <article class="card">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+          <line x1="8" y1="8" x2="16" y2="8"></line>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+          <line x1="8" y1="16" x2="12" y2="16"></line>
+        </svg>
+        <h3>Lead capture form</h3>
+        <p>Enquiry and renewal form that fills the agent's sheet.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="8" height="8" rx="1.5"></rect>
+          <rect x="13" y="3" width="8" height="8" rx="1.5"></rect>
+          <rect x="3" y="13" width="8" height="8" rx="1.5"></rect>
+          <rect x="13" y="13" width="8" height="8" rx="1.5"></rect>
+        </svg>
+        <h3>Follow-up board</h3>
+        <p>Renewal and enquiry follow-up board.</p>
+      </article>
+      <article class="card">
+        <svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+          <path d="M4 7l8 6 8-6"></path>
+        </svg>
+        <h3>Weekly digest</h3>
+        <p>Weekly insurance talking-points digest.</p>
+      </article>
+    </div>
+    <p class="price">Price: <strong>Rs 25,000 one time</strong></p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<!-- How it works -->
+<section id="how">
+  <div class="wrap">
+    <p class="eyebrow">How it works</p>
+    <h2>Three steps, then it runs each week.</h2>
+    <ol class="steps">
+      <li class="step">
+        <div class="num">1</div>
+        <p>I set up your renewal and enquiry follow-up board.</p>
+      </li>
+      <li class="step">
+        <div class="num">2</div>
+        <p>I connect the form so every new lead and renewal date lands in your sheet.</p>
+      </li>
+      <li class="step">
+        <div class="num">3</div>
+        <p>I send you a weekly digest of talking points you can share with clients.</p>
+      </li>
+    </ol>
+    <p class="slot-line" style="margin-top:28px">Typical setup: <span class="slot">[YOUR TIMELINE]</span></p>
+  </div>
+</section>
+
+<!-- Who I am -->
+<section id="about">
+  <div class="wrap">
+    <p class="eyebrow">Who I am</p>
+    <div class="about">
+      <div class="about-copy">
+        <div class="profile-chip">
+          <img src="images/profile.png" width="1024" height="1024"
+               alt="Portrait of Sujatha Ankenapally"
+               onerror="this.style.display='none'">
+          <span class="who">Sujatha Ankenapally</span>
+        </div>
+        <h2>I started Sujatha Professional Services because renewals should not slip away.</h2>
+        <p class="prose">I started Sujatha Professional Services because small insurance agents in Hyderabad lose renewals quietly, and a simple weekly follow-up fixes that. I build the board, connect the form, and send the digest, so the next renewal date is never resting on memory alone.</p>
+        <p class="pullquote"><span class="slot">[CLIENT QUOTE]</span> &mdash; <span class="slot">[CLIENT NAME]</span></p>
+      </div>
+      <figure class="about-photo" style="margin:0">
+        <img src="images/working.png" width="1254" height="1254"
+             alt="Sujatha Ankenapally working at her desk with the Sujatha Professional Services board on the wall"
+             onerror="this.closest('figure').style.display='none'">
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- Contact -->
+<section class="contact" id="contact">
+  <div class="wrap">
+    <p class="eyebrow" style="color:var(--sand)">Contact</p>
+    <h2>Start with a call.</h2>
+    <p class="prose">Pick a time, or message me directly on WhatsApp or email. I reply to every enquiry.</p>
+    <div class="links">
+      <a class="btn" href="https://cal.com/sujatha-ankenapally/20-min-al-business-discovery-call-with-sujatha">Book a 20 minute call</a>
+      <a class="link-alt" href="https://wa.me/919505653933?text=Hello%20Sujatha%20Professional%20Services%2C%20I%20would%20like%20to%20know%20about%20the%20renewal%20and%20enquiry%20follow-up%20board.">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.5L4 20l1.1-4.2A8.5 8.5 0 1 1 21 11.5z"></path>
+        </svg>
+        Message me on WhatsApp
+      </a>
+      <p class="second-number">Second WhatsApp number: 8977826933</p>
+      <a class="link-alt" href="mailto:sujathamusaligala123@gmail.com?subject=Enquiry%20for%20Sujatha%20Professional%20Services">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+          <path d="M4 7l8 6 8-6"></path>
+        </svg>
+        Email me
+      </a>
+    </div>
+  </div>
+  <footer class="site-footer">
+    <div class="wrap foot-row">
+      <a class="brand" href="#top"><span class="mark" aria-hidden="true"></span>Sujatha Professional Services</a>
+      <p>Renewals followed up. Every week. No lapse.</p>
+    </div>
+  </footer>
+</section>
+
+</body>
+</html>
