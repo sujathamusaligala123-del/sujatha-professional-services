@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sujatha Professional Services &mdash; Renewals followed up</title>
 <meta name="description" content="Renewal and enquiry follow-up for small life and health insurance agents in Hyderabad.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F6B6B'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -61,7 +62,7 @@
   .btn:hover{background:var(--teal-dark)}
   .btn:focus-visible{outline:3px solid var(--sand);outline-offset:2px}
 
-  .hero{min-height:calc(100svh - 70px);display:flex;align-items:center;padding:32px 0 40px}
+  .hero{min-height:calc(100vh - 70px);min-height:calc(100svh - 70px);display:flex;align-items:center;padding:32px 0 40px}
   .hero-grid{display:grid;grid-template-columns:1fr;gap:32px;align-items:center;width:100%}
   @media(min-width:900px){.hero-grid{grid-template-columns:1fr 1.15fr;gap:52px}}
   .lede{font-size:1.15rem;max-width:54ch;margin:0 0 30px;color:#2b2b2b}
@@ -147,7 +148,7 @@
         <a class="btn" href="https://cal.com/sujatha-ankenapally/20-min-al-business-discovery-call-with-sujatha">Book a 20 minute call</a>
       </div>
       <figure class="hero-photo" style="margin:0">
-        <img src="images/speaking.png" width="1672" height="941"
+        <img src="images/speaking.png" width="1672" height="941" fetchpriority="high" decoding="async"
              alt="Sujatha Ankenapally presenting the renewal and enquiry follow-up board to a client"
              onerror="this.closest('figure').style.display='none'">
       </figure>
@@ -168,7 +169,7 @@
 
 <!-- Full-width service shot -->
 <figure class="band" style="margin:0">
-  <img src="images/shot-1.png" width="1024" height="1024"
+  <img src="images/shot-1.png" width="1024" height="1024" loading="lazy" decoding="async"
        alt="The follow-up board screen showing a new enquiry card, a renewal date card and a weekly digest card"
        onerror="this.closest('figure').style.display='none'">
 </figure>
@@ -244,7 +245,7 @@
     <div class="about">
       <div class="about-copy">
         <div class="profile-chip">
-          <img src="images/profile.png" width="1024" height="1024"
+          <img src="images/profile.png" width="1024" height="1024" loading="lazy" decoding="async"
                alt="Portrait of Sujatha Ankenapally"
                onerror="this.style.display='none'">
           <span class="who">Sujatha Ankenapally</span>
@@ -254,7 +255,7 @@
         <p class="pullquote"><span class="slot">[CLIENT QUOTE]</span> &mdash; <span class="slot">[CLIENT NAME]</span></p>
       </div>
       <figure class="about-photo" style="margin:0">
-        <img src="images/working.png" width="1254" height="1254"
+        <img src="images/working.png" width="1254" height="1254" loading="lazy" decoding="async"
              alt="Sujatha Ankenapally working at her desk with the Sujatha Professional Services board on the wall"
              onerror="this.closest('figure').style.display='none'">
       </figure>
