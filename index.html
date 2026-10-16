@@ -183,6 +183,32 @@
   .site-footer .copyright{border-top:1px solid #23405f;margin-top:34px;padding-top:18px;font-size:.82rem;color:#93a8bf}
   .site-footer .fineprint{font-size:.82rem;color:#93a8bf;margin-top:10px}
 
+  /* eBook */
+  .ebook-band{background:linear-gradient(160deg,var(--navy-dark),var(--navy) 58%,var(--teal-dark));color:#c8d6e6}
+  .ebook-band h2{color:#fff}
+  .ebook-band .eyebrow{color:#9cd3c4}
+  .ebook-band .lede{color:#c8d6e6}
+  .ebook-band .prose{color:#c8d6e6}
+  .ebook-band .form-note{color:#9cd3c4}
+  .ebook-grid{display:grid;grid-template-columns:1fr;gap:34px;align-items:center}
+  @media(min-width:900px){.ebook-grid{grid-template-columns:1.15fr .85fr;gap:52px}}
+  .ebook-price{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px;margin:18px 0 0;font-family:"Fraunces",serif}
+  .ebook-price s{color:#9db4c8;font-size:1.2rem;font-weight:600;text-decoration:line-through}
+  .ebook-price strong{color:#fff;font-size:2.1rem;font-weight:600;line-height:1}
+  .ebook-price .price-note{font-family:"Inter",sans-serif;font-size:.76rem;letter-spacing:.12em;text-transform:uppercase;color:#9cd3c4;font-weight:700}
+  .ebook-cover{
+    position:relative;width:100%;max-width:330px;margin:0 auto;aspect-ratio:3/4;min-height:300px;
+    border-radius:14px;overflow:hidden;color:#fff;padding:26px 24px;
+    display:flex;flex-direction:column;justify-content:space-between;
+    background:linear-gradient(155deg,var(--teal),var(--teal-dark) 62%,var(--navy-dark));
+    box-shadow:0 18px 40px rgba(0,0,0,.28);
+  }
+  .ebook-cover::after{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--green)}
+  .ebook-cover .cov-top{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:#cdebe0;font-weight:700}
+  .ebook-cover .cov-title{display:block;font-family:"Fraunces",serif;font-size:1.5rem;line-height:1.14;font-weight:600;margin:14px 0 8px}
+  .ebook-cover .cov-sub{display:block;font-size:.88rem;color:#dbeee8}
+  .ebook-cover .cov-foot{display:block;font-size:.74rem;color:#cdebe0;border-top:1px solid rgba(255,255,255,.22);padding-top:12px;margin-top:16px}
+
   .skip{position:absolute;left:-999px}
   .skip:focus{left:12px;top:12px;background:#fff;padding:10px 14px;border-radius:8px;z-index:100}
 </style>
@@ -463,6 +489,37 @@
       <div class="value-card"><h3>Support for the whole family</h3><p>Considering dependants, seniors and children together.</p></div>
       <div class="value-card"><h3>Follow-up after your enquiry</h3><p>Keeping the conversation going until your questions are answered.</p></div>
       <div class="value-card"><h3>Available locally in Hyderabad</h3><p>Guidance rooted in your local service area and community.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- eBook -->
+<section id="ebook" class="ebook-band">
+  <div class="wrap ebook-grid">
+    <div>
+      <p class="eyebrow">eBook</p>
+      <h2>The AI Agent &amp; Automation Income Blueprint</h2>
+      <p class="lede">A Practical Beginner-to-Business Guide — by Sujatha Professional Services.</p>
+      <p class="prose">A practical 33-page guide that takes you from the basics of automation and AI agents to building a small, tested workflow and turning that skill into a clear service offer. It covers mapping a business process, choosing beginner-friendly tools, adding AI safely, human approval and data privacy, testing and monitoring, pricing your work, finding clients without spamming, and a realistic 30-day implementation plan — with worksheets, checklists, FAQs and a glossary.</p>
+      <div class="ebook-price">
+        <s>₹499</s>
+        <strong>₹199</strong>
+        <span class="price-note">Offer price</span>
+      </div>
+      <div class="btn-row">
+        <!-- Razorpay payment link. Payment confirmation and automatic PDF delivery are not implemented yet; eBooks are delivered manually after payment. -->
+        <a class="btn btn-primary" href="https://rzp.io/rzp/P7gMlHpx">Buy eBook – ₹199</a>
+        <a class="btn btn-wa" href="https://wa.me/918977826933?text=Hello%20SPS%2C%20I%20would%20like%20to%20buy%20the%20eBook%20-The%20AI%20Agent%20and%20Automation%20Income%20Blueprint%20at%20the%20offer%20price%20of%20Rs.199." target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a>
+      </div>
+      <p class="form-note">PDF · 33 pages. Secure payment via Razorpay. After payment, the eBook is delivered manually — automatic download delivery is not set up yet.</p>
+    </div>
+    <div class="ebook-cover" aria-hidden="true">
+      <span class="cov-top">Sujatha Professional Services</span>
+      <span>
+        <span class="cov-title">The AI Agent &amp; Automation Income Blueprint</span>
+        <span class="cov-sub">A Practical Beginner-to-Business Guide</span>
+      </span>
+      <span class="cov-foot">Beginner to Business · Worksheets &amp; Checklists</span>
     </div>
   </div>
 </section>
