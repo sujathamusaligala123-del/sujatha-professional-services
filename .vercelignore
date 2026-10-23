@@ -1,0 +1,9 @@
+.env*
+.git/
+.vercel/
+node_modules/
+*.pdf
+scripts/
+supabase/
+tests/
+EBOOK-SETUP.md

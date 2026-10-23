@@ -14,6 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="/ebook.js" defer></script>
 <style>
   :root{
     --navy:#0f2a4a;
@@ -58,8 +59,8 @@
 
   /* Buttons */
   .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:9px;
-    min-height:50px;padding:14px 24px;border-radius:8px;font-weight:600;font-size:1rem;
+    display:inline-flex;align-items:center;justify-content:center;gap:9px;appearance:none;
+    min-height:50px;padding:14px 24px;border-radius:8px;font-family:inherit;font-weight:600;font-size:1rem;
     text-decoration:none;border:1.5px solid transparent;transition:background .15s ease,color .15s ease,border-color .15s ease;cursor:pointer;
   }
   .btn-primary{background:var(--teal);color:#fff}
@@ -69,6 +70,7 @@
   .btn-outline{background:#fff;color:var(--navy);border-color:var(--navy)}
   .btn-outline:hover{background:var(--navy);color:#fff}
   .btn:focus-visible{outline:3px solid #9cd3c4;outline-offset:2px}
+  .btn[disabled]{opacity:.78;cursor:wait}
   .btn-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
 
   /* Header */
@@ -208,6 +210,18 @@
   .ebook-cover .cov-title{display:block;font-family:"Fraunces",serif;font-size:1.5rem;line-height:1.14;font-weight:600;margin:14px 0 8px}
   .ebook-cover .cov-sub{display:block;font-size:.88rem;color:#dbeee8}
   .ebook-cover .cov-foot{display:block;font-size:.74rem;color:#cdebe0;border-top:1px solid rgba(255,255,255,.22);padding-top:12px;margin-top:16px}
+  .ebook-status{margin-top:18px;max-width:60ch}
+  .ebook-status:empty{display:none}
+  .ebook-status-card{border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);border-radius:10px;padding:18px 20px;color:#e7f2ee}
+  .ebook-status-card h3{color:#fff;font-size:1.05rem;margin:0 0 6px}
+  .ebook-status-card p{margin:0 0 14px;font-size:.95rem;color:#c8d6e6}
+  .ebook-status-card p:last-child{margin-bottom:0}
+  .ebook-status-card.is-success{border-color:#9cd3c4;background:rgba(63,143,107,.2)}
+  .ebook-status-card.is-error{border-color:#f0b4a8;background:rgba(150,55,40,.24)}
+  .ebook-status-actions{display:flex;flex-wrap:wrap;gap:10px}
+  .ebook-status-actions .btn{min-height:46px;padding:11px 18px;font-size:.95rem}
+  .ebook-status-actions .btn[disabled]{opacity:.65;cursor:wait}
+  .ebook-status .btn-outline{background:#fff;color:var(--navy);border-color:#fff}
 
   .skip{position:absolute;left:-999px}
   .skip:focus{left:12px;top:12px;background:#fff;padding:10px 14px;border-radius:8px;z-index:100}
@@ -507,11 +521,12 @@
         <span class="price-note">Offer price</span>
       </div>
       <div class="btn-row">
-        <!-- Razorpay payment link. Payment confirmation and automatic PDF delivery are not implemented yet; eBooks are delivered manually after payment. -->
-        <a class="btn btn-primary" href="https://rzp.io/rzp/P7gMlHpx">Buy eBook – ₹199</a>
+        <button class="btn btn-primary" id="buy-ebook" type="button" aria-describedby="ebook-status">Buy eBook – ₹199</button>
         <a class="btn btn-wa" href="https://wa.me/918977826933?text=Hello%20SPS%2C%20I%20would%20like%20to%20buy%20the%20eBook%20-The%20AI%20Agent%20and%20Automation%20Income%20Blueprint%20at%20the%20offer%20price%20of%20Rs.199." target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a>
       </div>
-      <p class="form-note">PDF · 33 pages. Secure payment via Razorpay. After payment, the eBook is delivered manually — automatic download delivery is not set up yet.</p>
+      <div id="ebook-status" class="ebook-status" aria-live="polite"></div>
+      <noscript><p class="form-note">Please enable JavaScript to buy the eBook and download it after payment.</p></noscript>
+      <p class="form-note">PDF · 33 pages. Secure payment via Razorpay. Your download unlocks automatically after successful payment.</p>
     </div>
     <div class="ebook-cover" aria-hidden="true">
       <span class="cov-top">Sujatha Professional Services</span>

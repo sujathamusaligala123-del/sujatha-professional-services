@@ -1,0 +1,28 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/ebook.mjs": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/api/create-order", "destination": "/api/ebook?action=create-order" },
+    { "source": "/api/verify-payment", "destination": "/api/ebook?action=verify-payment" },
+    { "source": "/api/access", "destination": "/api/ebook?action=access" },
+    { "source": "/api/download", "destination": "/api/ebook?action=download" },
+    { "source": "/api/webhook/razorpay", "destination": "/api/ebook?action=webhook" },
+    { "source": "/scripts/(.*)", "destination": "/404" },
+    { "source": "/supabase/(.*)", "destination": "/404" },
+    { "source": "/.env.example", "destination": "/404" }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "private, no-store, max-age=0" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    }
+  ]
+}
