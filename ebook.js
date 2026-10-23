@@ -8,9 +8,17 @@
   var DOWNLOAD_URL = "/api/download";
   var WHATSAPP_HELP =
     "https://wa.me/918977826933?text=Hello%20SPS%2C%20I%20paid%20for%20the%20eBook%20and%20need%20help%20with%20the%20download.";
+  var STATUS_POLL_DELAY = 2500;
+  var MAX_STATUS_POLLS = 6;
   var lastPayment = null;
   var verifying = false;
   var paymentCompleted = false;
+  var handlerFired = false;
+  var checkoutFailed = false;
+  var statusPollTimer = null;
+  var statusPolling = false;
+  var statusPollAttempt = 0;
+  var lastAccessCheck = 0;
 
   function setButtonBusy(busy, label) {
     buyButton.disabled = Boolean(busy);
@@ -76,6 +84,8 @@
   }
 
   function showSuccess() {
+    paymentCompleted = true;
+    stopStatusPoll();
     setButtonBusy(true, "Payment received");
     renderCard(
       "success",
@@ -95,6 +105,111 @@
       "Please keep this page open while we confirm the payment with Razorpay. This usually takes a few seconds.",
       [],
     );
+  }
+
+  function stopStatusPoll() {
+    statusPolling = false;
+    if (statusPollTimer) {
+      clearTimeout(statusPollTimer);
+      statusPollTimer = null;
+    }
+  }
+
+  function showPendingConfirmation() {
+    renderCard(
+      "",
+      "Confirming your payment",
+      "Please keep this page open while we check the payment with Razorpay. This usually takes a few seconds.",
+      [actionLink("Need help? WhatsApp us", WHATSAPP_HELP, "btn-wa")],
+    );
+  }
+
+  function showNotCompleted() {
+    setButtonBusy(false, "Buy eBook – ₹199");
+    showError("Checkout closed before the payment was completed. You can try again when ready.", {
+      title: "Checkout not completed",
+      retry: startCheckout,
+      retryLabel: "Try checkout again",
+    });
+  }
+
+  function showNotConfirmed() {
+    setButtonBusy(false, "Buy eBook – ₹199");
+    var actions = [];
+    if (lastPayment) {
+      actions.push(
+        actionButton("Retry verification", function () {
+          verifyPayment(lastPayment);
+        }),
+      );
+    }
+    actions.push(
+      actionButton("Check payment status", function () {
+        pollAccess();
+      }),
+    );
+    actions.push(actionLink("Get help on WhatsApp", WHATSAPP_HELP, "btn-wa"));
+
+    renderCard(
+      "error",
+      "Payment not confirmed yet",
+      "If money was debited, Razorpay may still be processing the payment. Check again in a minute, or send us your Razorpay payment ID on WhatsApp.",
+      actions,
+    );
+  }
+
+  function pollAccess() {
+    if (paymentCompleted) return;
+    if (statusPolling) return;
+    statusPolling = true;
+    statusPollAttempt = 0;
+    setButtonBusy(true, "Confirming payment…");
+    showPendingConfirmation();
+
+    function tick() {
+      if (!statusPolling || paymentCompleted) {
+        stopStatusPoll();
+        return;
+      }
+
+      statusPollAttempt += 1;
+      getJson("/api/access")
+        .then(function (data) {
+          if (!statusPolling || paymentCompleted) {
+            stopStatusPoll();
+            return;
+          }
+          if (data && data.paid === true) {
+            showSuccess();
+            return;
+          }
+          if (statusPollAttempt === 1 && (!data || data.pending !== true)) {
+            stopStatusPoll();
+            showNotCompleted();
+            return;
+          }
+          if (statusPollAttempt >= MAX_STATUS_POLLS) {
+            stopStatusPoll();
+            showNotConfirmed();
+            return;
+          }
+          statusPollTimer = setTimeout(tick, STATUS_POLL_DELAY);
+        })
+        .catch(function () {
+          if (!statusPolling || paymentCompleted) {
+            stopStatusPoll();
+            return;
+          }
+          if (statusPollAttempt >= MAX_STATUS_POLLS) {
+            stopStatusPoll();
+            showNotConfirmed();
+            return;
+          }
+          statusPollTimer = setTimeout(tick, STATUS_POLL_DELAY);
+        });
+    }
+
+    tick();
   }
 
   function requestJson(url, options) {
@@ -200,13 +315,13 @@
     postJson("/api/verify-payment", payment)
       .then(function () {
         verifying = false;
-        paymentCompleted = true;
         showSuccess();
       })
       .catch(function (error) {
         verifying = false;
 
         if (error.code === "payment_failed") {
+          stopStatusPoll();
           setButtonBusy(false, "Buy eBook – ₹199");
           showError(error.message || "The payment could not be completed. Please try again.", {
             title: "Payment not completed",
@@ -216,17 +331,24 @@
           return;
         }
 
-        setButtonBusy(true, "Payment received – verification needed");
-        var canRetry =
-          error.code !== "invalid_signature" &&
-          error.code !== "payment_order_mismatch" &&
-          error.code !== "amount_mismatch" &&
-          error.code !== "currency_mismatch" &&
-          error.code !== "order_already_paid" &&
-          error.code !== "purchase_refunded";
+        var recoverable =
+          error.code === "invalid_signature" ||
+          error.code === "payment_not_captured" ||
+          error.code === "payment_provider_unavailable" ||
+          error.code === "storage_unavailable" ||
+          error.code === "order_state_conflict" ||
+          error.code === "rate_limited" ||
+          error.code === "request_failed" ||
+          !error.code;
 
+        if (recoverable) {
+          pollAccess();
+          return;
+        }
+
+        setButtonBusy(true, "Payment received – verification needed");
         showError(error.message || "We could not verify the payment yet.", {
-          retry: canRetry
+          retry: lastPayment
             ? function () {
                 verifyPayment(lastPayment);
               }
@@ -257,7 +379,8 @@
       theme: { color: "#0f6b6b" },
       notes: { product_id: "ai-agent-automation-income-blueprint" },
       handler: function (response) {
-        paymentCompleted = true;
+        handlerFired = true;
+        stopStatusPoll();
         lastPayment = {
           razorpay_order_id: response.razorpay_order_id,
           razorpay_payment_id: response.razorpay_payment_id,
@@ -268,13 +391,8 @@
       modal: {
         backdropclose: false,
         ondismiss: function () {
-          if (verifying || paymentCompleted) return;
-          setButtonBusy(false);
-          showError("Checkout closed before the payment was completed. You can try again when ready.", {
-            title: "Checkout not completed",
-            retry: startCheckout,
-            retryLabel: "Try checkout again",
-          });
+          if (verifying || handlerFired || paymentCompleted || checkoutFailed) return;
+          pollAccess();
         },
       },
     };
@@ -293,6 +411,8 @@
     }
 
     checkout.on("payment.failed", function (response) {
+      checkoutFailed = true;
+      stopStatusPoll();
       var description =
         response && response.error && response.error.description
           ? response.error.description
@@ -319,6 +439,10 @@
 
   function startCheckout() {
     if (buyButton.disabled) return;
+    stopStatusPoll();
+    handlerFired = false;
+    checkoutFailed = false;
+    lastPayment = null;
     status.textContent = "";
     setButtonBusy(true, "Opening secure checkout…");
 
@@ -340,6 +464,7 @@
   }
 
   function restoreAccess() {
+    lastAccessCheck = Date.now();
     getJson("/api/access")
       .then(function (data) {
         if (data && data.paid === true) showSuccess();
@@ -348,6 +473,26 @@
         return undefined;
       });
   }
+
+  function recheckAccess() {
+    if (paymentCompleted || verifying || statusPolling) return;
+    var now = Date.now();
+    if (now - lastAccessCheck < 3000) return;
+    lastAccessCheck = now;
+
+    getJson("/api/access")
+      .then(function (data) {
+        if (data && data.paid === true) showSuccess();
+      })
+      .catch(function () {
+        return undefined;
+      });
+  }
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") recheckAccess();
+  });
+  window.addEventListener("focus", recheckAccess);
 
   buyButton.addEventListener("click", startCheckout);
   restoreAccess();

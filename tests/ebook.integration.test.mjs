@@ -139,6 +139,9 @@ globalThis.fetch = async (input, init = {}) => {
 
   if (url.hostname === "test.supabase.co" && url.pathname.startsWith("/storage/v1/object/ebooks/")) {
     if (method === "GET") {
+      if (url.pathname.startsWith("/storage/v1/object/ebooks/ebooks/")) {
+        return jsonResponse({ message: "not found" }, 404);
+      }
       return new Response(PDF, {
         status: 200,
         headers: { "Content-Type": "application/pdf", "Content-Length": String(PDF.length) },
@@ -300,6 +303,19 @@ try {
   assert.ok(String(downloadRes.headers["content-disposition"]).includes("attachment"));
   ok("paid customer downloads the private PDF");
 
+  const originalStoragePath = process.env.EBOOK_STORAGE_PATH;
+  process.env.EBOOK_STORAGE_PATH = "ebooks/ai-agent-automation-income-blueprint.pdf";
+  try {
+    const fallbackDownload = await request(port, "/api/download", {
+      headers: { Cookie: combinedCookies(verifyRes.headers) },
+    });
+    assert.equal(fallbackDownload.status, 200, fallbackDownload.body.toString());
+    assert.equal(fallbackDownload.body.subarray(0, 5).toString(), "%PDF-");
+    ok("download recovers when EBOOK_STORAGE_PATH repeats the bucket name");
+  } finally {
+    process.env.EBOOK_STORAGE_PATH = originalStoragePath;
+  }
+
   const noCookieDownload = await request(port, "/api/download");
   assert.equal(noCookieDownload.status, 401);
   ok("download without a purchase cookie is rejected");
@@ -370,6 +386,32 @@ try {
   assert.equal(secondAccess.status, 200, secondAccess.body.toString());
   assert.equal(JSON.parse(secondAccess.body.toString()).paid, true);
   ok("webhook-first payment is recoverable from the signed pending cookie");
+
+  const createReconciled = await request(port, "/api/create-order", {
+    method: "POST",
+    headers: { Origin: origin, "Content-Type": "application/json" },
+    body: "{}",
+  });
+  const reconciledOrderId = JSON.parse(createReconciled.body.toString()).orderId;
+  const reconciledPending = cookieValue(createReconciled.headers, "sps_ebook_pending");
+  const reconciledPaymentId = "pay_MOCKRECONCILE01";
+  payments.set(reconciledPaymentId, {
+    id: reconciledPaymentId,
+    order_id: reconciledOrderId,
+    amount: PRICE,
+    currency: "INR",
+    status: "captured",
+    captured: true,
+    email: "reconciled@example.com",
+  });
+  const reconciledAccess = await request(port, "/api/access", {
+    headers: { Cookie: `sps_ebook_pending=${reconciledPending}` },
+  });
+  assert.equal(reconciledAccess.status, 200, reconciledAccess.body.toString());
+  assert.equal(JSON.parse(reconciledAccess.body.toString()).paid, true);
+  assert.equal(existingRow(reconciledOrderId).status, "paid");
+  assert.equal(existingRow(reconciledOrderId).razorpay_payment_id, reconciledPaymentId);
+  ok("access reconciles a captured payment from Razorpay when callback and webhook are missing");
 
   const refundRaw = JSON.stringify({
     event: "refund.processed",

@@ -261,7 +261,7 @@ function getConfig() {
   return {
     keyId: requireEnv("RAZORPAY_KEY_ID", 8),
     keySecret: requireEnv("RAZORPAY_KEY_SECRET", 16),
-    webhookSecret: requireEnv("RAZORPAY_WEBHOOK_SECRET", 16),
+    webhookSecret: String(process.env.RAZORPAY_WEBHOOK_SECRET || "").trim(),
     supabaseUrl,
     supabaseKey: requireEnv("SUPABASE_SERVICE_ROLE_KEY", 20),
     downloadSecret: requireEnv("EBOOK_DOWNLOAD_SECRET", 32),
@@ -551,19 +551,13 @@ function assertOrderMatchesProduct(cfg, order) {
   }
 }
 
-function assertOrderRowMatchesProduct(cfg, row) {
+function assertOrderRowMatchesProduct(row) {
   if (!row || row.product_id !== PRODUCT_ID) {
     throw new HttpError(409, "unknown_product", "This order is not for the eBook.");
   }
-  if (Number(row.amount) !== cfg.pricePaise) {
-    throw new HttpError(409, "amount_mismatch", "The order amount does not match the eBook price.");
-  }
-  if (String(row.currency || "").toUpperCase() !== cfg.currency) {
-    throw new HttpError(409, "currency_mismatch", "The order currency does not match the eBook price.");
-  }
 }
 
-function assertPaymentMatchesOrder(cfg, payment, row) {
+function assertPaymentMatchesOrder(payment, row) {
   if (!payment || typeof payment !== "object") {
     throw new HttpError(502, "invalid_payment", "The payment provider returned an invalid payment.");
   }
@@ -579,15 +573,12 @@ function assertPaymentMatchesOrder(cfg, payment, row) {
   if (payment.status === "refunded") {
     throw new HttpError(409, "payment_refunded", "This payment has been refunded.");
   }
-  if (Number(payment.amount) !== cfg.pricePaise) {
-    throw new HttpError(409, "amount_mismatch", "The paid amount does not match the eBook price.");
-  }
 }
 
 async function ensureOrderRow(cfg, orderId, payment) {
   let row = await getOrderRow(cfg, orderId);
   if (row) {
-    assertOrderRowMatchesProduct(cfg, row);
+    assertOrderRowMatchesProduct(row);
     return row;
   }
 
@@ -610,7 +601,7 @@ async function ensureOrderRow(cfg, orderId, payment) {
   if (!row) {
     throw new HttpError(503, "storage_unavailable", "Secure delivery is temporarily unavailable. Please try again in a minute.");
   }
-  assertOrderRowMatchesProduct(cfg, row);
+  assertOrderRowMatchesProduct(row);
   return row;
 }
 
@@ -619,7 +610,7 @@ async function markPaid(cfg, { orderId, paymentId, signature, email }) {
   if (!row) {
     row = await ensureOrderRow(cfg, orderId, null);
   }
-  assertOrderRowMatchesProduct(cfg, row);
+  assertOrderRowMatchesProduct(row);
 
   if (row.status === "refunded") {
     throw new HttpError(409, "purchase_refunded", "This purchase has been refunded.");
@@ -647,6 +638,44 @@ async function markPaid(cfg, { orderId, paymentId, signature, email }) {
     return current;
   }
   throw new HttpError(409, "order_state_conflict", "The order could not be updated. Please contact support.");
+}
+
+async function listOrderPayments(cfg, orderId) {
+  const data = await razorpayRequest(cfg, `/orders/${encodeURIComponent(orderId)}/payments`);
+  return Array.isArray(data?.items) ? data.items : [];
+}
+
+async function reconcileOrderPayment(cfg, orderId) {
+  let row = await getOrderRow(cfg, orderId);
+  if (!row) row = await ensureOrderRow(cfg, orderId, null);
+  assertOrderRowMatchesProduct(row);
+  if (row.status === "paid" || row.status === "refunded") return row;
+
+  const payments = await listOrderPayments(cfg, orderId);
+  let payment = payments.find(
+    (item) => item && item.status === "captured" && item.captured !== false,
+  );
+
+  if (!payment) {
+    const authorized = payments.find((item) => item && item.status === "authorized");
+    if (authorized) {
+      const settled = await captureAuthorizedPayment(cfg, authorized.id, authorized);
+      if (settled?.status === "captured" && settled.captured !== false) {
+        payment = settled;
+      }
+    }
+  }
+
+  if (!payment) return row;
+
+  assertPaymentMatchesOrder(payment, row);
+  await markPaid(cfg, {
+    orderId,
+    paymentId: payment.id,
+    signature: null,
+    email: safeEmail(payment.email),
+  });
+  return (await getOrderRow(cfg, orderId)) || row;
 }
 
 function safeEmail(value) {
@@ -815,10 +844,10 @@ async function handleVerifyPayment(req, res) {
   }
 
   const row = await ensureOrderRow(cfg, orderId, null);
-  assertOrderRowMatchesProduct(cfg, row);
+  assertOrderRowMatchesProduct(row);
 
   let payment = await razorpayRequest(cfg, `/payments/${encodeURIComponent(paymentId)}`);
-  assertPaymentMatchesOrder(cfg, payment, row);
+  assertPaymentMatchesOrder(payment, row);
 
   if (payment.status === "failed") {
     await markFailed(cfg, orderId);
@@ -827,7 +856,7 @@ async function handleVerifyPayment(req, res) {
 
   if (payment.status === "authorized") {
     payment = await captureAuthorizedPayment(cfg, paymentId, payment);
-    assertPaymentMatchesOrder(cfg, payment, row);
+    assertPaymentMatchesOrder(payment, row);
   }
 
   if (payment.status !== "captured" || payment.captured === false) {
@@ -861,13 +890,14 @@ async function handleVerifyPayment(req, res) {
 async function handleAccess(req, res) {
   requireMethod(req, "GET");
   const cfg = getConfig();
+  assertRateLimit(req, "access", 60, 60_000);
   const cookies = parseCookies(req);
 
   const access = verifyToken(cfg.downloadSecret, "a", cookies[ACCESS_COOKIE]);
   if (access) {
     const row = await getPaidRow(cfg, access.p, access.o);
     if (row) {
-      assertOrderRowMatchesProduct(cfg, row);
+      assertOrderRowMatchesProduct(row);
       sendJson(res, 200, { ok: true, paid: true, downloadUrl: "/api/download" });
       return;
     }
@@ -875,9 +905,23 @@ async function handleAccess(req, res) {
 
   const pending = verifyToken(cfg.downloadSecret, "p", cookies[PENDING_COOKIE]);
   if (pending) {
-    const row = await getOrderRow(cfg, pending.o);
+    let row = await getOrderRow(cfg, pending.o);
+    let reconcileFailed = false;
+
+    if (row && row.status !== "paid" && row.status !== "refunded") {
+      try {
+        row = await reconcileOrderPayment(cfg, pending.o);
+      } catch (error) {
+        if (error instanceof HttpError && error.status === 409) reconcileFailed = true;
+        console.error(
+          "[ebook] access reconciliation error:",
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
     if (row?.status === "paid" && row.razorpay_payment_id) {
-      assertOrderRowMatchesProduct(cfg, row);
+      assertOrderRowMatchesProduct(row);
       sendJson(
         res,
         200,
@@ -893,12 +937,29 @@ async function handleAccess(req, res) {
       );
       return;
     }
+
+    const isPending = row?.status === "created" && !reconcileFailed;
+    const clearCookies = [clearCookieHeader(req, ACCESS_COOKIE)];
+    if (row?.status === "refunded") clearCookies.push(clearCookieHeader(req, PENDING_COOKIE));
+
+    sendJson(
+      res,
+      200,
+      {
+        ok: true,
+        paid: false,
+        pending: isPending,
+        refunded: row?.status === "refunded",
+      },
+      { "Set-Cookie": clearCookies },
+    );
+    return;
   }
 
   sendJson(
     res,
     200,
-    { ok: true, paid: false },
+    { ok: true, paid: false, pending: false },
     { "Set-Cookie": clearCookieHeader(req, ACCESS_COOKIE) },
   );
 }
@@ -915,7 +976,17 @@ async function handleDownload(req, res) {
   if (!row) {
     const pending = verifyToken(cfg.downloadSecret, "p", cookies[PENDING_COOKIE]);
     if (pending) {
-      const candidate = await getOrderRow(cfg, pending.o);
+      let candidate = await getOrderRow(cfg, pending.o);
+      if (candidate && candidate.status !== "paid" && candidate.status !== "refunded") {
+        try {
+          candidate = await reconcileOrderPayment(cfg, pending.o);
+        } catch (error) {
+          console.error(
+            "[ebook] download reconciliation error:",
+            error instanceof Error ? error.message : String(error),
+          );
+        }
+      }
       if (candidate?.status === "paid" && candidate.razorpay_payment_id) {
         row = candidate;
         access = { o: candidate.razorpay_order_id, p: candidate.razorpay_payment_id };
@@ -928,7 +999,7 @@ async function handleDownload(req, res) {
     throw new HttpError(401, "download_not_authorised", "Please complete your eBook purchase to download this file.");
   }
 
-  assertOrderRowMatchesProduct(cfg, row);
+  assertOrderRowMatchesProduct(row);
   if (row.status !== "paid") {
     throw new HttpError(403, "download_not_authorised", "This purchase is not active. Please contact support.");
   }
@@ -937,28 +1008,59 @@ async function handleDownload(req, res) {
   }
 
   const encodedBucket = encodeURIComponent(cfg.bucket);
-  const encodedPath = cfg.objectPath.split("/").map((segment) => encodeURIComponent(segment)).join("/");
+  const storagePaths = [cfg.objectPath];
+  const bucketPrefix = `${cfg.bucket}/`;
+  if (cfg.objectPath.startsWith(bucketPrefix) && cfg.objectPath.length > bucketPrefix.length) {
+    storagePaths.push(cfg.objectPath.slice(bucketPrefix.length));
+  }
+  const encodedPaths = [...new Set(storagePaths)].map((path) =>
+    path.split("/").map((segment) => encodeURIComponent(segment)).join("/"),
+  );
 
-  let storageResponse;
-  try {
-    storageResponse = await fetch(
-      `${cfg.supabaseUrl}/storage/v1/object/${encodedBucket}/${encodedPath}`,
-      {
-        headers: {
-          apikey: cfg.supabaseKey,
-          Authorization: `Bearer ${cfg.supabaseKey}`,
+  let storageResponse = null;
+  let storageResponsePath = null;
+  let storageError = null;
+
+  for (let index = 0; index < encodedPaths.length; index += 1) {
+    const encodedPath = encodedPaths[index];
+    try {
+      const response = await fetch(
+        `${cfg.supabaseUrl}/storage/v1/object/${encodedBucket}/${encodedPath}`,
+        {
+          headers: {
+            apikey: cfg.supabaseKey,
+            Authorization: `Bearer ${cfg.supabaseKey}`,
+          },
+          cache: "no-store",
+          signal: AbortSignal.timeout(20_000),
         },
-        cache: "no-store",
-        signal: AbortSignal.timeout(20_000),
-      },
-    );
-  } catch (error) {
+      );
+      if ((response.status === 404 || response.status === 400) && index < encodedPaths.length - 1) {
+        try {
+          await response.body?.cancel();
+        } catch {}
+        continue;
+      }
+      storageResponse = response;
+      storageResponsePath = encodedPath;
+      break;
+    } catch (error) {
+      storageError = error;
+      break;
+    }
+  }
+
+  if (!storageResponse) {
     throw new HttpError(
       503,
       "download_unavailable",
       "The download is temporarily unavailable. Please try again in a minute.",
-      `Storage download failed: ${error instanceof Error ? error.message : String(error)}`,
+      `Storage download failed: ${storageError instanceof Error ? storageError.message : String(storageError)}`,
     );
+  }
+
+  if (storageResponsePath !== encodedPaths[0]) {
+    console.warn(`[ebook] storage fallback path used: ${storageResponsePath}`);
   }
 
   if (!storageResponse.ok) {
@@ -997,6 +1099,14 @@ async function handleDownload(req, res) {
 async function handleWebhook(req, res) {
   requireMethod(req, "POST");
   const cfg = getConfig();
+  if (cfg.webhookSecret.length < 16) {
+    throw new HttpError(
+      500,
+      "server_not_configured",
+      "Secure checkout is not configured yet. Please contact support.",
+      "Missing or invalid RAZORPAY_WEBHOOK_SECRET",
+    );
+  }
   const signature = String(req.headers["x-razorpay-signature"] || "").trim();
   if (!signature) {
     throw new HttpError(400, "missing_signature", "Invalid webhook signature.");
@@ -1025,7 +1135,7 @@ async function handleWebhook(req, res) {
     } else if (event === "payment.authorized") {
       if (payment?.id && payment?.order_id) {
         const row = await ensureOrderRow(cfg, payment.order_id, payment);
-        assertPaymentMatchesOrder(cfg, payment, row);
+        assertPaymentMatchesOrder(payment, row);
         const settled = payment.status === "authorized"
           ? await captureAuthorizedPayment(cfg, payment.id, payment)
           : payment;
@@ -1068,7 +1178,7 @@ async function processCapturedPayment(cfg, payment) {
   if (!PAYMENT_ID_RE.test(payment.id) || !ORDER_ID_RE.test(payment.order_id)) return;
 
   const row = await ensureOrderRow(cfg, payment.order_id, payment);
-  assertPaymentMatchesOrder(cfg, payment, row);
+  assertPaymentMatchesOrder(payment, row);
   if (payment.status !== "captured" || payment.captured === false) return;
 
   await markPaid(cfg, {
