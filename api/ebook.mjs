@@ -475,8 +475,9 @@ async function getPaidRowByPaymentId(cfg, paymentId) {
 }
 
 async function insertOrderRow(cfg, { orderId, amount, currency }) {
+  const query = new URLSearchParams({ on_conflict: "razorpay_order_id" }).toString();
   try {
-    await supabaseRequest(cfg, "/rest/v1/ebook_purchases", {
+    await supabaseRequest(cfg, `/rest/v1/ebook_purchases?${query}`, {
       method: "POST",
       headers: { Prefer: "resolution=ignore-duplicates" },
       body: [
@@ -843,20 +844,19 @@ async function handleVerifyPayment(req, res) {
     throw new HttpError(400, "invalid_signature", "Payment verification failed. Please contact support.");
   }
 
-  const row = await ensureOrderRow(cfg, orderId, null);
-  assertOrderRowMatchesProduct(row);
-
   let payment = await razorpayRequest(cfg, `/payments/${encodeURIComponent(paymentId)}`);
-  assertPaymentMatchesOrder(payment, row);
+  if (payment?.order_id !== orderId) {
+    throw new HttpError(409, "payment_order_mismatch", "This payment does not belong to the eBook order.");
+  }
 
   if (payment.status === "failed") {
+    await ensureOrderRow(cfg, orderId, payment);
     await markFailed(cfg, orderId);
     throw new HttpError(409, "payment_failed", "This payment failed. Please try again.");
   }
 
   if (payment.status === "authorized") {
     payment = await captureAuthorizedPayment(cfg, paymentId, payment);
-    assertPaymentMatchesOrder(payment, row);
   }
 
   if (payment.status !== "captured" || payment.captured === false) {
@@ -866,6 +866,10 @@ async function handleVerifyPayment(req, res) {
       "The payment is not captured yet. If money was debited, wait a minute and use Retry verification.",
     );
   }
+
+  const row = await ensureOrderRow(cfg, orderId, payment);
+  assertOrderRowMatchesProduct(row);
+  assertPaymentMatchesOrder(payment, row);
 
   await markPaid(cfg, {
     orderId,
@@ -907,12 +911,14 @@ async function handleAccess(req, res) {
   if (pending) {
     let row = await getOrderRow(cfg, pending.o);
     let reconcileFailed = false;
+    let reconcilePending = false;
 
-    if (row && row.status !== "paid" && row.status !== "refunded") {
+    if (!row || (row.status !== "paid" && row.status !== "refunded")) {
       try {
         row = await reconcileOrderPayment(cfg, pending.o);
       } catch (error) {
-        if (error instanceof HttpError && error.status === 409) reconcileFailed = true;
+        reconcileFailed = error instanceof HttpError && error.status >= 400 && error.status < 500;
+        reconcilePending = !reconcileFailed;
         console.error(
           "[ebook] access reconciliation error:",
           error instanceof Error ? error.message : String(error),
@@ -938,9 +944,10 @@ async function handleAccess(req, res) {
       return;
     }
 
-    const isPending = row?.status === "created" && !reconcileFailed;
+    const refunded = row?.status === "refunded";
+    const isPending = !refunded && (row?.status === "created" || (!row && reconcilePending));
     const clearCookies = [clearCookieHeader(req, ACCESS_COOKIE)];
-    if (row?.status === "refunded") clearCookies.push(clearCookieHeader(req, PENDING_COOKIE));
+    if (refunded) clearCookies.push(clearCookieHeader(req, PENDING_COOKIE));
 
     sendJson(
       res,
@@ -949,7 +956,7 @@ async function handleAccess(req, res) {
         ok: true,
         paid: false,
         pending: isPending,
-        refunded: row?.status === "refunded",
+        refunded,
       },
       { "Set-Cookie": clearCookies },
     );
@@ -977,7 +984,7 @@ async function handleDownload(req, res) {
     const pending = verifyToken(cfg.downloadSecret, "p", cookies[PENDING_COOKIE]);
     if (pending) {
       let candidate = await getOrderRow(cfg, pending.o);
-      if (candidate && candidate.status !== "paid" && candidate.status !== "refunded") {
+      if (!candidate || (candidate.status !== "paid" && candidate.status !== "refunded")) {
         try {
           candidate = await reconcileOrderPayment(cfg, pending.o);
         } catch (error) {

@@ -129,7 +129,7 @@ Do not deactivate the old Payment Link before the replacement is deployed and ve
 Run the committed tests locally:
 
 ```powershell
-node --test tests/ebook.integration.test.mjs tests/site-regression.test.mjs
+node --test tests/ebook.integration.test.mjs tests/ebook.ui.test.mjs tests/site-regression.test.mjs
 ```
 
 These use mocked Razorpay and Supabase responses. They do not make real payments, upload files, or change production data.

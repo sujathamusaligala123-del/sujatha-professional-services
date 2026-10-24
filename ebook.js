@@ -83,7 +83,13 @@
     renderCard("error", options.title || "We could not confirm the payment", message, actions);
   }
 
-  function showSuccess() {
+  function resolveDownloadUrl(data) {
+    var url = data && typeof data.downloadUrl === "string" ? data.downloadUrl.trim() : "";
+    if (/^\/api\/[A-Za-z0-9/_-]+$/.test(url)) return url;
+    return DOWNLOAD_URL;
+  }
+
+  function showSuccess(data) {
     paymentCompleted = true;
     stopStatusPoll();
     setButtonBusy(true, "Payment received");
@@ -92,7 +98,7 @@
       "Payment successful",
       "Thank you. Your AI Automation Blueprint Book is ready to download.",
       [
-        actionLink("Download Your AI Automation Blueprint Book", DOWNLOAD_URL, "btn-primary", true),
+        actionLink("Download Your eBook", resolveDownloadUrl(data), "btn-primary", true),
         actionLink("Need help? WhatsApp us", WHATSAPP_HELP, "btn-wa"),
       ],
     );
@@ -180,7 +186,7 @@
             return;
           }
           if (data && data.paid === true) {
-            showSuccess();
+            showSuccess(data);
             return;
           }
           if (statusPollAttempt === 1 && (!data || data.pending !== true)) {
@@ -313,9 +319,9 @@
     showVerifying();
 
     postJson("/api/verify-payment", payment)
-      .then(function () {
+      .then(function (data) {
         verifying = false;
-        showSuccess();
+        showSuccess(data);
       })
       .catch(function (error) {
         verifying = false;
@@ -444,14 +450,25 @@
     checkoutFailed = false;
     lastPayment = null;
     status.textContent = "";
-    setButtonBusy(true, "Opening secure checkout…");
+    setButtonBusy(true, "Checking payment status…");
 
-    loadRazorpay()
-      .then(function () {
-        return postJson("/api/create-order", {});
+    getJson("/api/access")
+      .catch(function () {
+        return null;
       })
-      .then(function (order) {
-        openCheckout(order);
+      .then(function (access) {
+        if (access && access.paid === true) {
+          showSuccess(access);
+          return null;
+        }
+        setButtonBusy(true, "Opening secure checkout…");
+        return loadRazorpay()
+          .then(function () {
+            return postJson("/api/create-order", {});
+          })
+          .then(function (order) {
+            openCheckout(order);
+          });
       })
       .catch(function (error) {
         setButtonBusy(false);
@@ -467,7 +484,7 @@
     lastAccessCheck = Date.now();
     getJson("/api/access")
       .then(function (data) {
-        if (data && data.paid === true) showSuccess();
+        if (data && data.paid === true) showSuccess(data);
       })
       .catch(function () {
         return undefined;
@@ -482,7 +499,7 @@
 
     getJson("/api/access")
       .then(function (data) {
-        if (data && data.paid === true) showSuccess();
+        if (data && data.paid === true) showSuccess(data);
       })
       .catch(function () {
         return undefined;

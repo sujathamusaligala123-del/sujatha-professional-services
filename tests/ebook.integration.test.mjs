@@ -413,6 +413,107 @@ try {
   assert.equal(existingRow(reconciledOrderId).razorpay_payment_id, reconciledPaymentId);
   ok("access reconciles a captured payment from Razorpay when callback and webhook are missing");
 
+  const createMissingRow = await request(port, "/api/create-order", {
+    method: "POST",
+    headers: { Origin: origin, "Content-Type": "application/json", "x-forwarded-for": "198.51.100.20" },
+    body: "{}",
+  });
+  assert.equal(createMissingRow.status, 200, createMissingRow.body.toString());
+  const missingRowOrderId = JSON.parse(createMissingRow.body.toString()).orderId;
+  const missingRowPending = cookieValue(createMissingRow.headers, "sps_ebook_pending");
+  assert.ok(rows.delete(missingRowOrderId));
+  const missingRowPaymentId = "pay_MOCKMISSINGROW1";
+  payments.set(missingRowPaymentId, {
+    id: missingRowPaymentId,
+    order_id: missingRowOrderId,
+    amount: PRICE,
+    currency: "INR",
+    status: "captured",
+    captured: true,
+    email: "lost-row@example.com",
+  });
+  const missingRowAccess = await request(port, "/api/access", {
+    headers: { Cookie: `sps_ebook_pending=${missingRowPending}` },
+  });
+  assert.equal(missingRowAccess.status, 200, missingRowAccess.body.toString());
+  const missingRowAccessBody = JSON.parse(missingRowAccess.body.toString());
+  assert.equal(missingRowAccessBody.paid, true);
+  assert.equal(missingRowAccessBody.downloadUrl, "/api/download");
+  assert.equal(existingRow(missingRowOrderId).status, "paid");
+  assert.equal(existingRow(missingRowOrderId).razorpay_order_id, missingRowOrderId);
+  assert.equal(existingRow(missingRowOrderId).razorpay_payment_id, missingRowPaymentId);
+  ok("access recreates a missing order row from a captured Razorpay payment");
+
+  const missingRowDownload = await request(port, "/api/download", {
+    headers: { Cookie: combinedCookies(missingRowAccess.headers) },
+  });
+  assert.equal(missingRowDownload.status, 200, missingRowDownload.body.toString());
+  assert.equal(missingRowDownload.body.subarray(0, 5).toString(), "%PDF-");
+  ok("a captured payment with a missing order row can download the private PDF");
+
+  const missingRowAccessAgain = await request(port, "/api/access", {
+    headers: { Cookie: `sps_ebook_pending=${missingRowPending}` },
+  });
+  assert.equal(JSON.parse(missingRowAccessAgain.body.toString()).paid, true);
+  assert.equal(
+    [...rows.values()].filter((row) => row.razorpay_order_id === missingRowOrderId).length,
+    1,
+  );
+  ok("missing-order reconciliation is idempotent");
+
+  const createMissingVerify = await request(port, "/api/create-order", {
+    method: "POST",
+    headers: { Origin: origin, "Content-Type": "application/json", "x-forwarded-for": "198.51.100.20" },
+    body: "{}",
+  });
+  assert.equal(createMissingVerify.status, 200, createMissingVerify.body.toString());
+  const missingVerifyOrderId = JSON.parse(createMissingVerify.body.toString()).orderId;
+  assert.ok(rows.delete(missingVerifyOrderId));
+  const missingVerifyPaymentId = "pay_MOCKMISSINGVERIFY1";
+  payments.set(missingVerifyPaymentId, {
+    id: missingVerifyPaymentId,
+    order_id: missingVerifyOrderId,
+    amount: PRICE,
+    currency: "INR",
+    status: "captured",
+    captured: true,
+  });
+  const missingVerifyRes = await request(port, "/api/verify-payment", {
+    method: "POST",
+    headers: { Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      razorpay_order_id: missingVerifyOrderId,
+      razorpay_payment_id: missingVerifyPaymentId,
+      razorpay_signature: signCheckout(missingVerifyOrderId, missingVerifyPaymentId),
+    }),
+  });
+  assert.equal(missingVerifyRes.status, 200, missingVerifyRes.body.toString());
+  assert.equal(existingRow(missingVerifyOrderId).status, "paid");
+  assert.equal(existingRow(missingVerifyOrderId).razorpay_payment_id, missingVerifyPaymentId);
+  ok("verify-payment recreates a missing order row using the verified order and payment");
+
+  const createMissingUnpaid = await request(port, "/api/create-order", {
+    method: "POST",
+    headers: { Origin: origin, "Content-Type": "application/json", "x-forwarded-for": "198.51.100.20" },
+    body: "{}",
+  });
+  assert.equal(createMissingUnpaid.status, 200, createMissingUnpaid.body.toString());
+  const missingUnpaidOrderId = JSON.parse(createMissingUnpaid.body.toString()).orderId;
+  const missingUnpaidPending = cookieValue(createMissingUnpaid.headers, "sps_ebook_pending");
+  assert.ok(rows.delete(missingUnpaidOrderId));
+  const missingUnpaidAccess = await request(port, "/api/access", {
+    headers: { Cookie: `sps_ebook_pending=${missingUnpaidPending}` },
+  });
+  assert.equal(missingUnpaidAccess.status, 200);
+  const missingUnpaidBody = JSON.parse(missingUnpaidAccess.body.toString());
+  assert.equal(missingUnpaidBody.paid, false);
+  assert.equal(missingUnpaidBody.pending, true);
+  const missingUnpaidDownload = await request(port, "/api/download", {
+    headers: { Cookie: `sps_ebook_pending=${missingUnpaidPending}` },
+  });
+  assert.equal(missingUnpaidDownload.status, 401);
+  ok("a missing order row without a captured payment does not grant PDF access");
+
   const refundRaw = JSON.stringify({
     event: "refund.processed",
     payload: { refund: { entity: { payment_id: secondPaymentId, amount: PRICE } } },
@@ -563,6 +664,7 @@ try {
     headers: { Origin: origin, "Content-Type": "application/json" },
     body: "{}",
   });
+  assert.equal(createPending.status, 200, createPending.body.toString());
   const pendingOnly = cookieValue(createPending.headers, "sps_ebook_pending");
   const pendingBeforePay = await request(port, "/api/access", {
     headers: { Cookie: `sps_ebook_pending=${pendingOnly}` },

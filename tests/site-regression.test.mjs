@@ -50,7 +50,7 @@ test("eBook UI no longer uses the manual Razorpay payment link", async () => {
   assert.doesNotMatch(html, /automatic download delivery is not set up/i);
   assert.match(html, /Buy eBook – ₹199/);
   assert.match(html, /Your download unlocks automatically after successful payment/);
-  assert.match(js, /Download Your AI Automation Blueprint Book/);
+  assert.match(js, /Download Your eBook/);
   assert.match(js, /\/api\/create-order/);
   assert.match(js, /\/api\/verify-payment/);
   assert.match(js, /\/api\/access/);
